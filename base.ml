@@ -1,12 +1,14 @@
+exception Arg 
+
 module Int = 
     struct
         let     even n      = if n mod 2=0 then true else false;;
         let     odd n       = not ( even n ) ;;
         let     abs n       = if n>0  then n else -n ;;
         let rec pow n m     = if m<=1 then n else n*(pow n(m-1)) ;;
-        let rec fact n      = if n<0 
-                    then raise (Invalid_argument "")
-                    else if n=0 then 1 else n*fact(n-1);;
+        let ( ** )          = pow 
+        let rec fact n      = if n<0 then raise Arg else 
+                                if n=0 then 1 else n*fact(n-1);;
         let rec sum i n f   = if i=n then f i else f i + sum(i+1)n f;;
         let     square n    = n*n;;
         let     cube   n    = n*n*n;;
@@ -58,18 +60,19 @@ module Float =
     struct
         let     pi              = 3.141592653589793;;
         let     e               = 2.718281828459045;;
-        let     abs     x       = if x > 0.0 then x else -.x;;
+        let     abs_float x     = if x > 0.0 then x else -.x;;
         let area_of_circle r    = if r > 0.0 then r*.r*.pi*.2.0 else 0.0;;
         let     square  x       = x*.x
-        let rec pow     x n     = if n<=0 then 1.0 else x*.pow x (n-1);;
-        let     cube    x       = pow x 3
+        let     cube    x       = x*.x*.x
+        let rec pow_float x n   = if n<=0 then 1.0 else x*.pow_float x (n-1);;
+        let (^^)                = pow_float
 
         (* newton raphson method *)
         let derivation f x      = let dx=1e-10 in (f(x+.dx) -. f x)/.dx ;;
         let fixedpoint f init   = 
             let epsiron             = 1e-10 in
             let rec loop x          = let fx = f x in
-                                      if abs(x-.fx)<epsiron 
+                                      if abs_float(x-.fx)<epsiron 
                                         then x
                                         else loop fx in
             loop init;;
@@ -92,7 +95,7 @@ module Float =
         let average   (x,y)     = (add_average x y ,mul_average x y);;
         let fix_average f i     =
             let     epsiron         = 1e-8 in
-            let rec loop(x,y)       = if abs(x-.y)<epsiron
+            let rec loop(x,y)       = if abs_float(x-.y)<epsiron
                                         then (x,y)
                                         else loop (f(x,y)) in
             loop i;;
@@ -114,8 +117,7 @@ module String =
         let cat s t         = s ^ t
         let sand t s        = s ^ t ^ s
         let emphasize s     = sand s "_"
-        let rec repeat s n  = if n<0 
-            then raise (Invalid_argument "") else match n with 
+        let rec repeat s n  = if n<0 then raise Arg else match n with 
             0   -> ""
           | k   -> s ^ (repeat s (k-1));;
 
@@ -130,7 +132,7 @@ module Polymorphic =
         let apply f a           = f a
         let twice f a           = f (f a)
         let fourtimes x         = twice twice x
-        let rec foldn s z n     = if n<=0 then z else foldn s z(n-1)
+        let rec foldn s z n     = if n<=0 then z else foldn s (s z)(n-1)
 
         let curry f x y         = f (x,y)
         let uncurry f(x,y)      = f x y
@@ -144,67 +146,53 @@ module Polymorphic =
 
 module MyList =
     struct
-        let cons x xs       = x::xs
-        let rec list f      = function
-                []              -> []
-              | x::xs           -> f x :: list f xs ;;
-        let rec foldl f i   = function
-                []              -> i
-              | x::xs           -> f (foldl f i xs) x ;;
-        let rec foldr f i   = function
-                []              -> i
-              | x::xs           -> f x (foldr f i xs) ;;
-        let forall p        = foldr (fun x -> (&&)(p x)) true ;;
-        let exists p        = foldr (fun x -> (||)(p x)) false ;;
-        let length          = foldr (Polymorphic.k succ) 0 ;; 
-        let append l m      = foldr cons m l        
-        let snoc x xs       = append xs [x]
-        let rev_append l m  = foldr snoc m l 
-        let rev l           = rev_append l [];;
-        let concat          = foldr append [];;
-        let nth n l         = (* get nth element from list *) 
-            let len = length l in 
-            if (abs n)>= len then raise(Invalid_argument "") else
-            let n'  = n mod len in
-            let n'' = if n'<0 then n'+len else n' in
-            let rec pure_nth n l = match (n,l) with
-                (0,x::_ ) (* when cond *)   -> x
-              | (n,x::xs)                   -> pure_nth(n-1)xs in
-            pure_nth n'' l;;
-        let (%) l n         = nth n l
-        let rec zip l r     = match (l,r) with
-                ([],_)          -> []
-              | (_,[])          -> []
-              | (x::xs,y::ys)   -> (x,y)::zip xs ys ;;
+        let cons x xs           = x::xs
+        let rec foldl f i       = function
+                []                  -> i
+              | x::xs               -> f (foldl f i xs) x ;;
+        let rec foldr f i       = function
+                []                  -> i
+              | x::xs               -> f x (foldr f i xs) ;;
+        let listr  f            = foldr (fun x -> cons(f x)) []
+        let forall p            = foldr (fun x -> (&&)(p x)) true ;;
+        let exists p            = foldr (fun x -> (||)(p x)) false ;;
+        let length l            = foldr (Polymorphic.k succ) 0 l ;; 
+        let append l m          = foldr cons m l        
+        let snoc x xs           = append xs [x]
+        let rev_append l m      = foldr snoc m l 
+        let rev l               = rev_append l [];;
+        let concat              = foldr append [];;
+        let rec elem n l        = match (n,l) with
+                (n,l)when n<0||l=[] -> raise Arg
+              | (0,x::_)            -> x
+              | (n,_::xs)           -> elem (n-1) xs
+        let (%) l n             = elem n l
+        let rec zip l r         = match (l,r) with
+                ([],_) | (_,[])     -> []
+              | (x::xs,y::ys)       -> (x,y)::zip xs ys ;;
         let rec unzip       = function
-                []              -> ([],[])
-              | (x,y)::rest     -> let (xs,ys) = unzip rest in
-                                   (x::xs,y::ys) ;;
-        let     filter p    = foldr (fun x xs->if p x then x::xs else xs) [] 
+                []                  -> ([],[])
+              | (x,y)::rest         -> let (xs,ys) = unzip rest in
+                                       (x::xs,y::ys) ;;
+        let     filter p        = foldr (fun x xs->if p x then x::xs else xs) [] 
+        let (|-)                = filter
 
         (* association list *)
         let rec assoc key = function
-            (k,v)::_ when k=key -> v
-          | _::rest             -> assoc key rest 
-    (*    | _                   -> raise Match_failure "" *)
-
-        let city_phone = [
-            ("Kyoto","075");
-            ("Osaka","06");
-            ("Tokyo","03")] ;;
+                (k,v)::_ when k=key -> v
+              |  _    :: rest       -> assoc key rest 
+              (* _                  -> raise Match_failure "" *)
+        let city_phone = [("Kyoto","075");("Osaka","06");("Tokyo","03")] ;;
 
         (* sorting *)
-
         let rec randlist max    = function
                 n when n<1          -> []
               | n                   -> (Random.float max)::(randlist max (n-1));;
-
         let rec insert x        = function
                 []                  -> [x]
               | y::ys when x<y      -> x::y::ys
               | y::ys               -> y::(insert x ys) ;;
         let insertion_sort      = foldr insert [] ;;
-
         let rec quick_sort      = function
                 ([] | [_]) as s     -> s
               | pivot::rest         -> (
@@ -216,15 +204,126 @@ module MyList =
                   partition [] [] rest) ;;
 
         (* Nat Algebra to List Algebra *)
-        let rec nat2list s z n  = if n<=0 then [] else z::nat2list s(s z)(n-1) ;;
-        let     downto1 n       = nat2list pred n n  ;;
+        let rec foldnr s z n    = if n<=0 then [] else z::foldnr s(s z)(n-1)
+        let     downto1 n       = foldnr pred n n  ;;
+        let rec natlist m n     = if m>n  then [] else m::natlist (m+1) n
+        let (--)                = natlist
 
+        let rec product l m     = match (l,m) with
+                  ([],_) | (_,[])   -> []
+                | (x::xs,y::ys)     -> let f = fun y ys->(x,y)::ys in 
+                                       (foldr f [] m) @ product xs m
+        let rec selfpairlist        = function
+                  []                -> []
+                | (x::xs) as l      -> let f = fun y ys -> (x,y)::ys in
+                                       (foldr f [] l) @ selfpairlist xs
+        (* in Haskell 
+         * > squares r = let s = sqrt r in
+         *                  [(x,y)|x<-[1..s],y<-[1..s],x^2+y^2=r] 
+         * They do not make big product space, so;  *)
 
+        let rec product_with_filter p l m = match(l,m) with
+              ([],_)|(_,[]) -> []
+            | (x::xs,y::ys) -> let f y ys = if p(x,y) then (x,y)::ys else ys in
+                               (foldr f [] m) @ product_with_filter p xs m
+        let squares r           = 
+            let s = truncate(sqrt(float_of_int r)) + 1 in
+            product_with_filter (fun(x,y)->x*x+y*y=r)(1--s)(1--s) 
 
     end;;
+open MyList
 
-
+module Types = 
+    struct
+        type 'a maybe           = Nothing | Just of 'a
+        type ('a,'b) either     = Left of 'a | Right of 'b
+    end
+open Types
 
 module Tree =
     struct
+        type 'a btree           = Lf | Br of 'a * 'a btree * 'a btree 
+        let rec foldbt h c      = function
+                  Lf                -> c
+                | Br(a,l,r)         -> h a (foldbt h c l)(foldbt h c r)  
+        let size                = foldbt (fun x l r -> 1 + l + r)   0
+        let depth               = foldbt (fun x l r -> 1 + max l r) 0
+        let elem      t x       = foldbt (fun a l r ->(x=a)||l||r) false t
+        let preorder            = foldbt (fun x l r -> x::l @ r)    []
+        let inorder             = foldbt (fun x l r -> l @ (x::r))  []
+        let postorder           = foldbt (fun x l r -> l @ r @ [x]) []
+        let preorder2 t         = 
+            let rec preord t list   = match t with
+                      Lf                -> list
+                    | Br(a,l,r)         -> a::(preord l(preord r list)) in
+            preord t []
+        
+        (* binary search tree (bst) *)
+        let rec mem    bst x    = match bst with 
+                  Lf                -> false
+                | Br(a,l,r)         -> if x=a then true else 
+                                       if x<a then mem l x else mem r x
+        let rec add    bst x    = match bst with 
+                  Lf                -> Br(x,Lf,Lf)
+                | Br(a,l,r) as s when x=a   -> s
+                | Br(a,l,r)     -> if x<a then Br(a,add l x,r)else Br(a,l,add r x)
+        (* note !! if we use mem/add to normal int tree then it casuse bug !! *)
+
+
+        let bt = Br(1,Br(2,Lf,Br(3,Lf,Lf)),Br(4,Br(5,Lf,Lf),Lf))
+
+        (* rosetree *)
+        (* is this good for foldt g h c d ? *)
+        type 'a rtree       = RLf | RBr of 'a * 'a rtree list
+        let rec foldrt g h d c = function
+                  RLf               -> d
+                | RBr(a,[])         -> g a d
+                | RBr(a,l)          -> g a(foldr(fun x->h(foldrt g h d c x))c l);;
+        let rtree_of_btree      = 
+
+
+        let rt  = 
+            RBr(1,[
+                RBr(2,[RLf;RLf]);
+                RBr(3,[
+                    RBr(4,[]);
+                    RBr(5,[RLf]);
+                    RBr(6,[RLf;RLf]);
+                    RLf;
+                    RBr(7,[
+                        RBr(8,[
+                            RBr(9,[]);
+                            RBr(10,[])]);
+                        RBr(11,[])])]);
+                RLf])
+
+
+
+        (* xmltree *)
+        (* 'a is tag type *)
+        type ('a,'b) xml = XLf of 'b Types.maybe | XBr of 'a * ('a,'b)xml list
+        let rec string_of_xml   = function
+                  XLf Nothing       -> ""
+                | XLf(Just s)       -> s
+                | XBr(tag, l)       -> "<" ^tag^">\n" ^
+                                       foldr (fun x ->(^)(string_of_xml x)) "" l ^
+                                       "</"^tag^">\n";;
+        let addressbook = 
+            XBr ("addressbook", [
+                XBr ("person",  [
+                    XBr ("name", [XLf (Just "Atsushi Igarashi")]);
+                    XBr ("tel",  [XLf (Just "075-123-4567")])]);
+                XBr ("person", [XLf Nothing]);
+                XBr ("person", [XLf Nothing])]);;
+
+
     end
+
+
+open Types
+open Int
+open Float
+open String
+open Polymorphic
+open MyList
+open Tree
