@@ -63,42 +63,4 @@ let reverse_color = function
 
 
 
-type nat = Zero | Succ of nat;;
-
-let zero = Zero and two = Succ (Succ Zero);;
-
-let rec add m n =
-    match m with 
-      Zero -> n 
-    | Succ m' -> Succ (add m' n);;
-
-type intlist = INil | ICons of int * intlist;;
-
-type even = Zero | SuccE of odd and odd = SuccO of even;;
-
-let rec o_plus_e (SuccO o) e = SuccO (e_plus_e o e)
-    and e_plus_e e1 e2 =
-        match e1 with 
-          Zero -> e2 
-        | SuccE o -> SuccE (o_plus_e o e2);;
-
-
-
-
-type 'a mylist = Nil | Cons of 'a * 'a mylist;;
-
-type 'a with_location = {loc_x: float; loc_y: float; body: 'a};;
-
-type ('a,'b) list_with_tail = Nil of 'b | Cons of 'a * ('a,'b) list_with_tail;;
-
-type 'a option = None | Some of 'a;;
-
-let fact n =
-    let rec fact' n = 
-        if n = 0 then 1 else n * fact'(n-1) 
-    in
-    if n < 0 then None else Some (fact' n);;
-
-
-type ('a, 'b) sum = Left of 'a | Right of 'b;;
 

@@ -1,4 +1,5 @@
 exception Arg 
+let soi = string_of_int
 
 module Int = 
     struct
@@ -132,17 +133,22 @@ module Polymorphic =
         let apply f a           = f a
         let twice f a           = f (f a)
         let fourtimes x         = twice twice x
-        let rec foldn s z n     = if n<=0 then z else foldn s (s z)(n-1)
+        let rec foldn s z n     = if n<=0  then z else foldn s (s z)(n-1)
+        let rec limit s z       = if s z=z then z else limit s (s z)
 
         let curry f x y         = f (x,y)
         let uncurry f(x,y)      = f x y
 
         (* combinators are polymorphic *)
-        let ($) f g x   = f (g x)  (* dot operator in Haskell *)
-        let i x         = x
-        let k x y       = x
-        let s x y z     = x z (y z)
+        let ($) f g x       = f (g x)  (* dot operator in Haskell *)
+        let i x             = x
+        let k x y           = x
+        let s x y z         = x z (y z)
+        let t x y           = y x
+        let pair f g x      = (f x)(g x)
+        let filter p f g x  = if p x then f x else g x
     end
+open Polymorphic
 
 module MyList =
     struct
@@ -174,8 +180,8 @@ module MyList =
                 []                  -> ([],[])
               | (x,y)::rest         -> let (xs,ys) = unzip rest in
                                        (x::xs,y::ys) ;;
-        let     filter p        = foldr (fun x xs->if p x then x::xs else xs) [] 
-        let (|-)                = filter
+        let     filterr p       = foldr (fun x xs->if p x then x::xs else xs) [] 
+        let (|-)                = filterr
 
         (* association list *)
         let rec assoc key = function
@@ -206,8 +212,11 @@ module MyList =
         (* Nat Algebra to List Algebra *)
         let rec foldnr s z n    = if n<=0 then [] else z::foldnr s(s z)(n-1)
         let     downto1 n       = foldnr pred n n  ;;
+        open Int64
         let rec natlist m n     = if m>n  then [] else m::natlist (m+1) n
+        let rec natlistL m n    = if m>n then [] else m::natlistL(add m 1L)n
         let (--)                = natlist
+        let (---)               = natlistL           
 
         let rec product l m     = match (l,m) with
                   ([],_) | (_,[])   -> []
@@ -243,12 +252,15 @@ open Types
 module Tree =
     struct
         type 'a btree           = Lf | Br of 'a * 'a btree * 'a btree 
+        let     lf              = Lf
+        let     br a l r        = Br(a,l,r)
         let rec foldbt h c      = function
                   Lf                -> c
                 | Br(a,l,r)         -> h a (foldbt h c l)(foldbt h c r)  
         let size                = foldbt (fun x l r -> 1 + l + r)   0
         let depth               = foldbt (fun x l r -> 1 + max l r) 0
         let elem      t x       = foldbt (fun a l r ->(x=a)||l||r) false t
+        let reflect             = foldbt (fun a l r -> br a r l)    lf 
         let preorder            = foldbt (fun x l r -> x::l @ r)    []
         let inorder             = foldbt (fun x l r -> l @ (x::r))  []
         let postorder           = foldbt (fun x l r -> l @ r @ [x]) []
@@ -264,9 +276,9 @@ module Tree =
                 | Br(a,l,r)         -> if x=a then true else 
                                        if x<a then mem l x else mem r x
         let rec add    bst x    = match bst with 
-                  Lf                -> Br(x,Lf,Lf)
+                  Lf                -> br x lf lf 
                 | Br(a,l,r) as s when x=a   -> s
-                | Br(a,l,r)     -> if x<a then Br(a,add l x,r)else Br(a,l,add r x)
+                | Br(a,l,r)     -> if x<a then br a(add l x)r else br a l(add r x)
         (* note !! if we use mem/add to normal int tree then it casuse bug !! *)
 
 
@@ -274,13 +286,25 @@ module Tree =
 
         (* rosetree *)
         (* is this good for foldt g h c d ? *)
-        type 'a rtree       = RLf | RBr of 'a * 'a rtree list
-        let rec foldrt g h d c = function
+        type 'a rtree           = RLf | RBr of 'a * 'a rtree list
+        let     rlf             = RLf
+        let     rbr a l         = RBr(a,l)
+        let rec foldrt g h d c  = function
                   RLf               -> d
                 | RBr(a,[])         -> g a d
-                | RBr(a,l)          -> g a(foldr(fun x->h(foldrt g h d c x))c l);;
-        let rtree_of_btree      = 
-
+                | RBr(a,l)          -> g a (foldr(h $(foldrt g h d c)) c l);;
+        let     bt_rt           = 
+            let g a l   = br (Some a) l lf                                  in
+            let h       = function Lf -> br None lf | Br(a,l,_) -> br a l   in 
+            foldrt g h Lf Lf 
+        let rec purifybt        = function 
+              Lf                    -> lf
+            | Br(None,l,Lf)         -> purifybt l
+            | Br(None,Lf,r)         -> purifybt r
+            | Br(None,_,_)          -> raise Arg
+            | Br(Some a,l,r)        -> br a(purifybt l)(purifybt r)
+        let     btree_of_rtree  = purifybt $ bt_rt 
+        let     rtree_of_btree  = foldbt (fun a l r -> rbr a [l;r]) rlf  
 
         let rt  = 
             RBr(1,[
@@ -319,11 +343,53 @@ module Tree =
 
     end
 
+module InfSeq = 
+    struct
+        type 'a seq                 = Cons of 'a * ('a->'a seq)
+        let value_of_seq(Cons(i,f)) = i 
+        let successor   (Cons(i,f)) = f i
+        let nth_seq           n z   = foldn successor z n  
+        let nth_value_of_seq  n     = value_of_seq $ nth_seq n 
+        let rec fun_seq     s n z   = Cons(s n z,fun_seq s (n+1))
+        let     succ_seq            = fun_seq (k succ) 0
+        let     step                = fun_seq (+)
+        (* fib is in another method, 
+         * to define fib with fun_seq, There needs complex analysis *)
+        let rec fib_seq       n m   = Cons(n, fib_seq(n+m))
+
+
+        open Int64
+        let divisible m n           = m mod n = 0
+        let divisibleL m n          = rem m n = 0L
+        let first_divisor       n   = 
+            let rec loop n d = if divisible n d then d else loop n(d+1) in 
+            loop n 2
+        let first_divisorL      n   = 
+            let rec loop n d = if divisibleL n d then d else loop n(add d 1L) in
+            loop n 2L
+        let isprime             n   = n = first_divisor n 
+        let isprimeL            n   = n = first_divisorL n
+        let prime_table     = Hashtbl.create 1;;
+        let is_primeL       = function
+              0L -> false
+            | 1L -> false
+            | n  -> if Hashtbl.mem prime_table n 
+                        then Hashtbl.find prime_table n
+                        else begin
+                            Hashtbl.add prime_table n (isprimeL n);
+                            Hashtbl.find prime_table n end;;
+        let is_prime n      = is_primeL (of_int n);;
+    end
+        open InfSeq;;
+
+
+#use "prime.ml"
+
 
 open Types
 open Int
 open Float
 open String
-open Polymorphic
 open MyList
 open Tree
+
