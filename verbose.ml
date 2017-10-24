@@ -44,9 +44,20 @@
             print_string ( name ^ "'s BMI is " ^ 
                             string_of_float bmi_value ^ ", " ^ shape ^ ".");;
 
+
+        (* association list *)
+        let rec assoc key = function
+                (k,v)::_ when k=key -> v
+              |  _    :: rest       -> assoc key rest 
+              (* _                  -> raise Match_failure "" *)
+        let city_phone = [("Kyoto","075");("Osaka","06");("Tokyo","03")] ;;
+
+
         (* record e.g. *)
         type student            = {name: string; id: int}
         let string_of_student s = s.name ^ "'s ID is " ^ string_of_int s.id
+
+
 
         (* variant e.g. 2D functions*)
         (* 2D is very important !!              *)
