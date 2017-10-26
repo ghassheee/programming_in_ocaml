@@ -150,7 +150,7 @@ module BadNat   =
               Zero              -> n 
             | Succ m            -> Succ (add m n);;
     end
-        open BadNat;;
+
 
 module EvenOdd = 
     struct
@@ -174,36 +174,209 @@ module Tree =
             | RBr(a,l)              -> br(Some a)(foldr h lf l)lf
     end
 
+module Expr = 
+    struct 
+        type arith                  =
+                  Const of int
+                | Add of arith*arith
+                | Mul of arith*arith
+        let rec eval                = function
+                  Const n               -> n
+                | Add(n,m)              -> (eval n)+(eval m)
+                | Mul(n,m)              -> (eval n)*(eval m)
+        let rec string_of_arith     = let soa = string_of_arith in function
+                  Const n               -> soi n          
+                | Add(n,m)              -> "(" ^ soa n ^ "+" ^ soa m ^ ")"
+                | Mul(n,m)              -> soa n ^ "*" ^ soa m 
+        let rec expand              = function
+                  Add(a,b)              -> Add(expand a,expand b)
+                | Mul(n,Add(a,b))       -> Add(expand(Mul(n,a)),expand(Mul(n,b)))
+                | Mul(Add(a,b),m)       -> Add(expand(Mul(a,m)),expand(Mul(b,m)))
+                | x                     -> x
+        (* e.g.  (3+4)*(2+5) *)
+        let expr                    = 
+            Mul( 
+                Add ((Const 3),(Const 4)),
+                Add ((Const 2),(Const 5))
+            )
+    end open Expr 
 
 
+module CurryHaward = 
+    struct 
+        (* a*(b+c)              -> (a*b)+(a*c)             *)
+        (* (a*b)+(a*c)          -> a*(b+c)                 *)
+        (* (a+b)*(c+d)          -> (a*c+a*d)+(b*c+b*d)     *)
+        (* (a*c+a*d)+(b*c+b*d)  -> (a+b)*(c+d)             *)
+        (* (c^a)*(c^b)          -> c^(a+b)                 *) 
+        (* c^(a+b)              -> (c^a)*(c^b)             *)
+        let f1                  = function 
+                  (a,Left  b)       -> Left (a,b)
+                | (a,Right c)       -> Right(a,c)
+        let f2                  = function 
+                  Left(a,b)         -> (a,Left b)
+                | Right(a,c)        -> (a,Right c)
+        let f3                  = function
+                  (Left a ,Left  c) -> Left (Left (a,c))
+                | (Left a ,Right d) -> Right(Left (a,d))
+                | (Right b,Left  c) -> Left (Right(b,c))
+                | (Right b,Right d) -> Right(Right(b,d))
+        let f4                  = function
+                  Left (Left (a,c)) -> (Left  a,Left  c)
+                | Right(Left (a,d)) -> (Left  a,Right d)
+                | Left (Right(b,c)) -> (Right b,Left  c)
+                | Right(Right(b,d)) -> (Right b,Right d)
+        let f5      (f,g)       = function  
+                  Left a            -> f a
+                | Right b           -> g b
+        let f6       f          =          
+            let left f a = f (Left a) in let right f b = f (Right b) in 
+            (left f, right f)
+    end  
+
+
+module BadPrime =
+    struct
+        (*  #use "prime".ml
 
         (* expansion make slow *)
         let first_divisor_slow  n   = foldn (filter(divisible n)id succ) 2 n 
         let isprime             n   = foldr((&&)$((!=)0)$((mod)n))true(2--(n-1))
-        
         (* m--n will cause stack overflow when 1--1000000 *)
         let add_prime               = filter is_prime cons (k id)    
         let prime_tbl m n           = foldr add_prime [] (m--n)
 
+        *)
+    end
+
 (*
-type 'a seq = Cons of 'a*(unit->'a seq) ;;
-let rec from n = Cons (n, fun () -> from (n+1));;
-let Cons(x,f) = from 1;;
-let Cons(y,g) = f();;
-let Cons(z,h) = g();;
-let rec mapseq f (Cons(x,t)) = 
-    Cons(f x, fun() -> mapseq f (t()));;
-let reciprocals = mapseq (fun x -> 1.0 /. float_of_int x) (from 2);;
-let rec take n s = match(n,s)with
-          (0,_)         -> []
-        | (n,Cons(x,f)) -> x::(take(n-1)(f()));;
+        type 'a seq                 = Cons of 'a*(unit->'a seq) ;;
+        let rec from n              = Cons (n, fun()-> from (n+1));;
+        let Cons(x,f)               = from 1;;
+        let Cons(y,g)               = f();;
+        let Cons(z,h)               = g();;
+        let rec mapseq f(Cons(x,t)) = Cons(f x, fun()-> mapseq f (t()));;
+        let reciprocals = mapseq (fun x-> 1.0 /. float_of_int x) (from 2);;
+        let rec take n s = match(n,s)with
+                  (0,_)         -> []
+                | (n,Cons(x,f)) -> x::(take(n-1)(f()));;
 *)
 
 
 
 
-(* when (is not pattern) *) 
-let f = function 
-      []                    -> 0
-    | a::x when a>0         -> 1
-    | a::x (*when a<=0*)    -> 2;; (* if comment out compiler throws warning *) 
+(* 
+        (* when usage (is not pattern) *)
+        let f = function 
+              []                    -> 0
+            | a::x when a>0         -> 1
+            | a::x (*when a<=0*)    -> 2  (* commentout throws warning *) 
+*)
+
+
+
+
+
+module CoinChange   = 
+    struct
+        let rec change coins amount = match (coins, amount) with
+              (_,0)                     -> []
+            | ((c::rest)as coins,total) -> 
+                    if c>total then change rest total else ( 
+                        try c::change coins(total-c) 
+                        with Failure "change"->change rest total )
+            | _                         -> raise (Failure "change");;
+
+        let us_coins = [25;10;5;1]
+        let gb_coins = [50;20;10;5;2;1]
+    end open CoinChange
+
+module Exception = 
+    struct
+        (*
+        type exn        = Invalid_argument of string
+                        | Not_found
+                        | Division_by_zero
+                        | End_of_file
+                        | Failure
+                        | ...   *)
+
+        (* my exception *)
+        exception Foo;;
+        exception Bar of int;;
+        exception Hoge of string;;
+        exception Zero_found ;;
+
+        let prod_list   l       = let rec pl = function
+                  []                -> 1
+                | a::_ when a=0     -> raise Zero_found
+                | a::rest           -> a*(pl rest) in
+            try pl l with Zero_found -> 0;;
+
+        (*  
+        invalid_arg
+        failwith 
+        try expr with exn_pattern -> expr 
+        *) 
+        let map_sqrt l          = 
+            let sqrt'' x = if x<0. then invalid_arg "sqrt (minus)" else sqrt' x in
+            try Some (listr sqrt' l ) 
+            with Invalid_argument "sqrt (minus)" -> None;;
+
+        (* e.g. exception list *)
+        let exnlist = [Hoge "hoge"; Bar 0; Foo]
+        let f = function
+              Foo           -> 0
+            | Bar n         -> n
+            | Hoge "hoge"   -> 1
+            | x             -> raise x;;
+    end 
+
+module ControlStructure =
+    struct
+        let unit1 = print_string "Hello, " 
+        let unit2 = print_string "world!"
+        let unit3 = print_endline "" ;;
+        
+        let()=unit1 in let()=unit2 in unit3    ;;
+        let f x y z=5 in f unit3 unit2 unit1   ;;  (* reversed order *)
+        let ((),(),()) = ( unit3,unit2,unit1 ) ;;  (* reversed order *)
+        unit1; unit2; unit3                    ;;
+ 
+        let print_hello ()  = print_string "Hello, "; 0;; (* () -> int *)
+
+        (* if *)
+        let g b     = if b then unit1; unit2; unit3      (* suger syntax *)
+        (* let h b     = if b then(unit3, unit2, unit1)*)  (* type error *)
+        (* suger syntax :   "if b then unit"   => "if b then unit else ()"  *)
+
+        (* while *)
+        let parrot ()       = let str = ref "" in
+            while (str:=read_line(); !str<>".") do
+                print_string !str;
+                print_endline !str
+            done;;
+
+        (* whle *)
+        let rec whle cond body = 
+            if (fun()->cond)() then ((fun()->body)();whle cond body)
+        
+        (* e.g. *)
+        let fact n          = let i=ref 1 and res=ref 1 in
+            whle (!i<=n) (
+                res := !res * !i;
+                i   := !i + 1
+            ); 
+            !res;;
+
+        let rec iter f  = foldr (fun x xs->begin f x;xs end) ()
+        
+        let stations = 
+            ["Tokyo";"Shinagawa";"Shin-Yokohama";"Nagoya";"Kyoto";"Shin-Osaka" ]
+        let print_station s = print_string "Station: "; print_endline s ;;
+        iter print_station stations ;;
+
+    end
+
+
+

@@ -40,14 +40,11 @@ let prime = concat [
 
 module Prime = 
     struct 
-        open Int64
-        let divisible     n d   = n mod d = 0
+        (* Int64 *)
         let divisibleL    n d   = rem n d = 0L
-        let rec div_from  d n   = if divisible n d  then d else div_from(1+d)n
-        let rec divL_from d n   = if divisibleL n d then d else divL_from(add d 1L)n
-        let first_divisor   n   = div_from 2 n
+        let rec divL_from d n   = 
+            if divisibleL n d then d else divL_from(Int64.add d 1L)n
         let first_divisorL  n   = divL_from 2L n 
-        let isprime         n   = n = first_divisor n 
         let isprimeL        n   = n = first_divisorL n
         let is_prime_table      = Hashtbl.create 1
         let is_primeL           = function
@@ -58,7 +55,24 @@ module Prime =
                         else begin
                             Hashtbl.add is_prime_table n (isprimeL n);
                             Hashtbl.find is_prime_table n end
-        let is_prime n      = is_primeL (of_int n)
+
+        (* Int *)
+        let     divisible n d   = n mod d = 0
+        let rec div_from  d n   = if divisible n d  then d else div_from(1+d)n
+        let     threshold       = iof $ floor $ sqrt $ foi $ succ
+        let rec find_prime p(x::xs) = if p=x then x::xs else find_prime p xs
+        let     next_prime      = function
+                  []                -> id [] (* implement here *)
+                | l                 -> tail l
+        let first_divisor_from pl n =  
+            let rec loop pl n = 
+                let p = head pl in 
+                if p>threshold n then n else 
+                if divisible n p then p else 
+                loop (next_prime pl) n in loop pl n
+        let first_divisor   n   = first_divisor_from prime n
+        let isprime         n   = n = first_divisor n   
+        let is_prime n          = is_primeL (of_int n)
 
         let     print_bald list = foldr (fun x -> (^)(soi x^";")) "" list
         let     print_list l    = "[" ^ print_bald l ^ "]" 

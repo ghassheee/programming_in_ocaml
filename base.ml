@@ -3,11 +3,14 @@ open Int64
 exception Arg 
 
 let soi = string_of_int
-
+let sof = string_of_float
+let iof = int_of_float
+let foi = float_of_int
 
 
 module Types = 
     struct
+        type 'a option          = None | Some of 'a ;;
         type 'a maybe           = Nothing | Just of 'a
         type ('a,'b) either     = Left of 'a | Right of 'b
     end open Types
@@ -169,7 +172,17 @@ module Float =
                                         else loop fx    in loop init
         let newton1step f x     = x -. (f x)/.(derivation f x) 
         let newton_method f ini = fixedpoint (newton1step f) ini 
-        let sqrt a              = newton_method (fun x->x*.x-.a) 1.0
+        let rec sqrt' a         = 
+            let e x = x*.x-.a in
+            let nm  = newton_method in
+            if a>1000000000000.     then 100. *. (sqrt' (a/.10000.)) else 
+            if a>10000000000.       then nm e 1000000.      else
+            if a>100000000.         then nm e 100000.       else
+            if a>1000000.           then nm e 10000.        else 
+            if a>10000.             then nm e 1000.         else
+            if a>100.               then nm e 100.          else 
+            if a<0.                 then nan                else 
+                nm e 1. 
 
         (* integral *)
         let integral f a b      =     
@@ -213,6 +226,9 @@ module String =
 module MyList =
     struct
         let cons x xs           = x::xs
+        let nil                 = []
+        let tail (x::xs)        = xs
+        let head (x::xs)        = x
         let rec foldl f i       = function    []    -> i
                                             | x::xs -> f (foldl f i xs) x 
         let rec foldr f i       = function    []    -> i
@@ -220,7 +236,7 @@ module MyList =
         let listr  f            = foldr (fun x -> cons(f x)) []
         let forall p            = foldr (fun x -> (&&)(p x)) true 
         let exists p            = foldr (fun x -> (||)(p x)) false 
-        let length l            = foldr (Polymorphic.k succ) 0 l  
+        let length l            = foldr (k succ) 0 l  
         let append l m          = foldr cons m l        
         let snoc x xs           = append xs [x]
         let rev_append l m      = foldr snoc m l 
@@ -401,10 +417,10 @@ module Tree =
 module InfSeq = 
     struct
         type 'a seq                 = Cons of 'a * ('a->'a seq)
-        let value_of_seq(Cons(i,f)) = i 
-        let successor   (Cons(i,f)) = f i
+        let of_seq     (Cons(i,_))  = i 
+        let successor  (Cons(i,f))  = f i
         let nth_seq           n z   = foldn successor z n  
-        let nth_value_of_seq  n     = value_of_seq $ nth_seq n 
+        let nth_of_seq        n     = of_seq $ nth_seq n 
         let rec fun_seq     s n z   = Cons(s n z,fun_seq s (n+1))
         let     succ_seq            = fun_seq (k succ) 0
         let     step                = fun_seq (+)
@@ -414,5 +430,38 @@ module InfSeq =
 
     end open InfSeq
 
+
+
+
+module MyQueue =
+    struct
+        type 'a reflist     = RNil | RCons of 'a * 'a reflist ref
+        type 'a queue       = {mutable head: 'a reflist; mutable last: 'a reflist}
+        
+        let create ()       = {head = RNil; last = RNil}
+        let append a        = let c = RCons(a,ref RNil) in function
+              {head=RNil;last=RNil}as q -> q.head<-c; q.last<-c
+            | {last=RCons(_,xs)} as q   -> xs:=c; q.last<-c  
+            | _                         -> failwith "input queue broken"
+
+        let push    a       = function
+              {head=RNil;last=RNil}as q -> let c=RCons(a,ref RNil) in
+                                           q.head<-c;q.last<-c 
+            | {head=b}as q              -> let c=RCons(a,ref b) in q.head<-c
+            | _                         -> failwith "input queue broken"
+
+        let peek            = function
+              {head=RNil;last=RNil}     -> failwith "empty queue"
+            | {head=RCons(a,_)}         -> a
+            | _                         -> failwith "queue's head broken"        
+
+        let pop             = function
+              {head=RNil;last=RNil}     -> failwith "empty queue"
+            | {head=RCons(x,xs)}as q when !xs=RNil 
+                                        -> q.head<-RNil; q.last<-RNil; x
+            | {head=RCons(x,xs)}as q    -> q.head<- !xs; x 
+            | _                         -> failwith "queue's head broken"        
+        let q               = create ();;
+    end open MyQueue
 
 
