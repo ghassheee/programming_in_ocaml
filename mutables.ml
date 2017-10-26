@@ -10,15 +10,15 @@ module Mutables     =
          *)
 
         (* 1. string *)
-        let str = "like";; 
-        (* str.[2] <- 'k' *)     (* forbidden in 2017 *)
-        Bytes.set str 2 'k'  ;;  (* Byte.set string int char *)
+        let str         = "like";; 
+        let ()          = str.[2] <- 'k';;      (* syntax suger for String.set *)
+        let ()          = Bytes.set str 2 'k'  ;;  (* Byte.set string int char *)
 
         let p           = "life"
         let pair1       = ("life",p)
         let pair2       = (p,p) ;;
-        (pair1= pair2, fst pair1= fst pair2, snd pair1= snd pair2);; (* TTT *)
-        (pair1==pair2, fst pair1==fst pair2, snd pair1==snd pair2);; (* FFT *)
+        let ttt = (pair1= pair2, fst pair1= fst pair2, snd pair1= snd pair2)
+        let fft = (pair1==pair2, fst pair1==fst pair2, snd pair1==snd pair2)
         (*    equality     *)
         (*      =       :    same value      *)
         (*      ==      :    same instance   *)
@@ -26,7 +26,7 @@ module Mutables     =
         (* 2. mutable record *)
         type teacher    = {name:string; mutable office:string}
         let     t       = {name="Igarashi"; office="140"}
-        (* t.office <- "142"  *) (* forbidden in 2017 *)
+        let ()          = t.office <- "142";; 
 
         (* reference *)
         let p = ref 5 and q = ref 2;;

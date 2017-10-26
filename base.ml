@@ -212,13 +212,13 @@ module Float =
     end open Float
 
 
-module String =
+module MyString =
     struct
         let cat s t         = s ^ t
         let sand t s        = s ^ t ^ s
         let emphasize s     = sand s "_"
         let repeat s n      = foldn ((^)s) "" n
-    end open String
+    end open MyString
 
 
 
