@@ -255,7 +255,7 @@ module MyList =
               | (x,y)::rest             -> let(xs,ys)=unzip rest in(x::xs,y::ys)
         let     filterr p       = foldr (filter p cons (k id)) [] 
         let     (|-)            = filterr
-        let iterate     x xs    = let ()=x in xs
+        let iter_fun    x xs    = let ()=x in xs
 
         (* sorting *)
         let rec randlist max    = function

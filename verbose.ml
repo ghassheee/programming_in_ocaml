@@ -370,6 +370,8 @@ module ControlStructure =
             !res;;
 
         let rec iter f  = foldr (fun x xs->begin f x;xs end) ()
+        let rec iter_array f = () (* define as list    e.g. folda fun () *)
+        let rec iteri_array f i [|a,b,c|] = () (* f 1 a; f 2 b; f 2 c *) 
         
         let stations = 
             ["Tokyo";"Shinagawa";"Shin-Yokohama";"Nagoya";"Kyoto";"Shin-Osaka" ]
@@ -378,5 +380,42 @@ module ControlStructure =
 
     end
 
+module IO = 
+    struct 
+        let open_file_at_last filename
+            = open_out_gen [Open_wronly; Open_append; Open_text] 0o755 filename
 
+        (*
+        (* IO functions *)
+        open_out filename
+        open_in filename
+        close_out filename
+        close_in filename
+
+        output_string
+        output_char
+        output_byte
+        fluesh (* casuse write action immediately *)
+
+        (* to stdout *)
+        print_string  == output_string stdout
+        print_char
+        print_int
+        print_float 
+        print_endline 
+        print_newline
+
+        (* to stderr *)
+        prerr_string
+        prerr_char
+        ...
+
+        (* from stdin *)
+        read_line
+        read_int
+        read_float
+        *)
+
+
+    end
 
