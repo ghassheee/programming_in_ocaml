@@ -15,6 +15,10 @@ module Types =
         type ('a,'b) either     = Left of 'a | Right of 'b
     end open Types
 
+module MySys = 
+    struct 
+        let cmd                 = Sys.command
+    end open MySys
 
 
 module Polymorphic =
@@ -54,15 +58,15 @@ module Polymorphic =
 module MyInt64  =
     struct
         (* fibonacci *)
-        let     table       = Hashtbl.create 1;;
+        let     hashtbl     = Hashtbl.create 1;;
         let rec fibL        = function
             0L -> 0L
           | 1L -> 1L 
-          | n  -> if Hashtbl.mem table n
-                    then Hashtbl.find table n
+          | n  -> if Hashtbl.mem hashtbl n
+                    then Hashtbl.find hashtbl n
                     else begin 
-                        Hashtbl.add table n(add(fibL(sub n 1L))(fibL(sub n 2L)));
-                        Hashtbl.find table n end ;;
+                        Hashtbl.add hashtbl n(add(fibL(sub n 1L))(fibL(sub n 2L)));
+                        Hashtbl.find hashtbl n end ;;
 
     end open MyInt64
 
@@ -233,16 +237,16 @@ module MyList =
                                             | x::xs -> f (foldl f i xs) x 
         let rec foldr f i       = function    []    -> i
                                             | x::xs -> f x (foldr f i xs) 
-        let listr  f            = foldr (fun x -> cons(f x)) []
-        let forall p            = foldr (fun x -> (&&)(p x)) true 
-        let exists p            = foldr (fun x -> (||)(p x)) false 
-        let length l            = foldr (k succ) 0 l  
-        let append l m          = foldr cons m l        
+        let listr       f    l  = foldr (fun x -> cons(f x)) [] l
+        let forall      p    l  = foldr (fun x -> (&&)(p x)) true l
+        let exists      p    l  = foldr (fun x -> (||)(p x)) false l
+        let length           l  = foldr (k succ) 0 l  
+        let append      k    l  = foldr cons l k        
         let snoc x xs           = append xs [x]
-        let rev_append l m      = foldr snoc m l 
-        let rev l               = rev_append l []
-        let concat              = foldr append []
-        let rec elem n l        = match (n,l) with
+        let rev_append  k    l  = foldr snoc l k 
+        let rev              l  = rev_append l []
+        let concat           l  = foldr append [] l
+        let rec elem    n    l  = match (n,l) with
                 (n,l) when n<0||l=[]    -> raise Arg
               | (0,x::_)                -> x
               | (n,_::xs)               -> elem (n-1) xs
@@ -253,8 +257,8 @@ module MyList =
         let rec unzip       = function
                 []                      -> ([],[])
               | (x,y)::rest             -> let(xs,ys)=unzip rest in(x::xs,y::ys)
-        let     filterr p       = foldr (filter p cons (k id)) [] 
-        let     (|-)            = filterr
+        let     filterr p    l  = foldr (filter p cons (k id)) [] l
+        let     (|-)  x         = filterr x
         let iter_fun    x xs    = let ()=x in xs
 
         (* sorting *)
@@ -265,7 +269,7 @@ module MyList =
                 []                  -> [x]
               | y::ys when x<y      -> x::y::ys
               | y::ys               -> y::(insert x ys) ;;
-        let insertion_sort      = foldr insert [] ;;
+        let insertion_sort    l = foldr insert [] l 
         let rec quick_sort      = function
                 ([] | [_]) as s     -> s
               | pivot::rest         -> (
@@ -322,14 +326,14 @@ module Tree =
         let rec foldbt h c      = function
                   Lf                -> c
                 | Br(a,l,r)         -> h a (foldbt h c l)(foldbt h c r)  
-        let size                = foldbt (fun x l r -> 1 + l + r)   0
-        let depth               = foldbt (fun x l r -> 1 + max l r) 0
+        let size             t  = foldbt (fun x l r -> 1 + l + r)   0 t
+        let depth            t  = foldbt (fun x l r -> 1 + max l r) 0 t
         let elem      t x       = foldbt (fun a l r ->(x=a)||l||r) false t
-        let reflect             = foldbt (fun a l r -> br a r l)    lf 
-        let preorder            = foldbt (fun x l r -> x::l @ r)    []
-        let inorder             = foldbt (fun x l r -> l @ (x::r))  []
-        let postorder           = foldbt (fun x l r -> l @ r @ [x]) []
-        let preorder2 t         = 
+        let reflect          t  = foldbt (fun a l r -> br a r l)    lf t
+        let preorder         t  = foldbt (fun x l r -> x::l @ r)    [] t
+        let inorder          t  = foldbt (fun x l r -> l @ (x::r))  [] t
+        let postorder        t  = foldbt (fun x l r -> l @ r @ [x]) [] t
+        let preorder2        t  = 
             let rec preord t list   = match t with
                       Lf                -> list
                     | Br(a,l,r)         -> a::(preord l(preord r list)) in
@@ -358,18 +362,18 @@ module Tree =
                   RLf               -> d
                 | RBr(a,[])         -> g a d
                 | RBr(a,l)          -> g a (foldr(h $(foldrt g h d c)) c l);;
-        let     bt_rt           = 
+        let     bt_rt         t = 
             let g a l   = br (Some a) l lf                                  in
             let h       = function Lf -> br None lf | Br(a,l,_) -> br a l   in 
-            foldrt g h Lf Lf 
+            foldrt g h Lf Lf t
         let rec purifybt        = function 
               Lf                    -> lf
             | Br(None,l,Lf)         -> purifybt l
             | Br(None,Lf,r)         -> purifybt r
             | Br(None,_,_)          -> raise Arg
             | Br(Some a,l,r)        -> br a(purifybt l)(purifybt r)
-        let     btree_of_rtree  = purifybt $ bt_rt 
-        let     rtree_of_btree  = foldbt (fun a l r -> rbr a [l;r]) rlf  
+        let     btree_of_rtree t= purifybt ( bt_rt t )
+        let     rtree_of_btree t= foldbt (fun a l r -> rbr a [l;r]) rlf t
 
         let rt  = 
             RBr(1,[
@@ -461,7 +465,7 @@ module MyQueue =
                                         -> q.head<-RNil; q.last<-RNil; x
             | {head=RCons(x,xs)}as q    -> q.head<- !xs; x 
             | _                         -> failwith "queue's head broken"        
-        let q               = create ();;
+        (* let q               = create () *)
     end open MyQueue
 
 

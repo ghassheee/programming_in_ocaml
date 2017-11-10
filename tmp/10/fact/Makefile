@@ -1,3 +1,9 @@
+LIBRARY=lib
 
-: main.ml fact.ml
-ocamlc -o fact10 main.ml fact.ml
+
+all: main.ml 
+	ocamlc -I . -I ${LIBRARY} -o fact10 lib/fact.ml lib/fuga.ml main.ml 
+
+
+clean: 
+	rm -rf ${LIBRARY}/*.cmo ${LIBRARY}/*.cmi *.cmi *.cmo

@@ -10,8 +10,6 @@
  * - primitive and not practical (e.g. crypto thing)
  *)
 
-#use "base.ml"
-
         (* char *)
         let capitalize c = 
             let int = int_of_char c in
@@ -249,20 +247,25 @@ module BadPrime =
         *)
     end
 
-(*
-        type 'a seq                 = Cons of 'a*(unit->'a seq) ;;
-        let rec from n              = Cons (n, fun()-> from (n+1));;
-        let Cons(x,f)               = from 1;;
-        let Cons(y,g)               = f();;
-        let Cons(z,h)               = g();;
-        let rec mapseq f(Cons(x,t)) = Cons(f x, fun()-> mapseq f (t()));;
-        let reciprocals = mapseq (fun x-> 1.0 /. float_of_int x) (from 2);;
-        let rec take n s = match(n,s)with
-                  (0,_)         -> []
-                | (n,Cons(x,f)) -> x::(take(n-1)(f()));;
-*)
 
+module UnitSeq = 
+    struct
 
+        (* following definition can walk 
+         * along a sequence step by step with unit stopper () *)
+        type 'a useq                = Cons of 'a*(unit->'a useq) ;;
+        let rec useq_from z         = Cons (z, fun()->useq_from(succ z));;
+        let Cons(x,f)               = useq_from 1;;  (* seq_from 1 *)
+        let Cons(y,g)               = f();;         (* seq_from 2 *)
+        let Cons(z,h)               = g();;         (* seq_from 3 *)
+        let rec mapuseq f (Cons(x,t))= Cons(f x, fun()-> mapuseq f (t()));;
+        let reciprocal_useq         = mapuseq (fun x->1.0/.foi x)(useq_from 2);;
+        let rec list_of_useq n seq  = match(n,seq)with
+                  (0,_)                 -> []
+                | (n,Cons(x,f))         -> x::list_of_useq(n-1)(f()) 
+        (* e.g. type *)
+        (* # list_of_useq 4 reciprocal_seq ;; *)
+    end
 
 
 (* 
@@ -415,7 +418,76 @@ module IO =
         read_int
         read_float
         *)
-
-
+        let opg             = open_out_gen
+        let open_create s   = opg [Open_wronly;Open_creat;Open_text]0o666 s
+        let open_append s   = opg [Open_wronly;Open_append;Open_text]0o666 s
+        let prl             = print_endline
+        let ask_remove  s   = let()= prl ("overwrite "^s^" ? (yes/no)") in 
+                              if "yes"=read_line()then Sys.remove s else exit 1;;
     end
+
+module Module = 
+    struct
+        let array_make      = Array.make
+        let array_init      = Array.init (* # init 10(fun i->char_of_int(i+48)) *)
+        let array_length    = Array.length
+        let array_append    = Array.append
+        let array_concat    = Array.concat
+        let array_of_list   = Array.of_list
+        let list_of_array   = Array.to_list
+        let array_map       = Array.map
+        let array_itter     = Array.iter
+
+        (* escape sequence *)
+        (* %d int                       *)
+        (* %x hexadecimal               *)
+        (* %X HEXADECIMAL               *)
+        (* %s string                    *)
+        (* %c char                      *)
+        (* %C interpret EscapeSequence  *)
+        (* %f float                     *)
+        (* %B BOOL                      *)
+        (* %% %                         *)
+        let printf          = Printf.printf
+        let fprintf         = Printf.fprintf
+        let sprintf         = Printf.sprintf (* return string *)
+        let scanf           = Scanf.scanf
+        let fscanf          = Scanf.fscanf
+        let sscanf          = Scanf.sscanf
+        let f name age      = name^" can"^(if age<20 then"not "else" ")^"vote."
+        let g s             = sscanf s "%s is %d years old." f
+        (* # g "Yourname is 20 years old."      *)
+        
+        (* printf takes type format6 *)
+        (* # open CamlinternalFormatBasics  ;;                           *)
+        (* # format_of_string "a %s b %d c" ;;                          
+         - : (string -> int -> '_a, '_b, '_c, '_d, '_d, '_a) format6
+         = Format (Char_literal ('a ',
+                        String (No_padding,
+                            Char_literal (' b ',
+                                Int (Int_d, No_padding, No_precision,
+                                    Char_literal (' c', End_of_format))))),
+            "a %s b %d c")      *)
+        
+        (* non-regular libs *)
+        (* # #load "nums.cma";;     *) (* or $ ocaml "nums.cma" *)
+        (* # open Num               *)
+        (* # Int 1 +/ Int 2         *)
+        (* # Int 1 // Int 3         *) (* interpreted as type constructor Ratio *)
+
+        let queue_create        = Queue.create
+        let queue_add           = Queue.add
+        let queue_take          = Queue.take 
+
+    end open Module
+
+
+(* e.g. dot notation is ambiguous *)
+module M = struct 
+        type r = {a:int; b:int} 
+    end
+        (* let x = {M.a=1; M.b=2} in    *)
+        (* x.M.a + x.M.b                *) (* 3 *)
+        (* x.(M.a) + x.(M.b)            *) (* err *) 
+
 
