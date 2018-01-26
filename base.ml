@@ -33,6 +33,7 @@ module Polymorphic =
         let rec limit s z       = if s z=z then z else limit s (s z)
         let curry f x y         = f (x,y)
         let uncurry f(x,y)      = f x y
+        let fi b t f            = if b then t else f
 
         (* combinators are polymorphic *)
         let ($) f g x       = f (g x)  (* dot operator in Haskell *)

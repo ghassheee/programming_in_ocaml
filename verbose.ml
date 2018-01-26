@@ -21,7 +21,6 @@
         let fib'  = fst $ foldn (fun(x,y)->(x+y,x)) (0,1) 
 
 
-
         (* random list self-made *)
         let nextrand seed =
             let a = 16807.0 and m =2147483647.0 in 
@@ -211,23 +210,23 @@ module CurryHaward =
         let f1                  = function 
                   (a,Left  b)       -> Left (a,b)
                 | (a,Right c)       -> Right(a,c)
-        let f2                  = function 
+        let g1                  = function 
                   Left(a,b)         -> (a,Left b)
                 | Right(a,c)        -> (a,Right c)
-        let f3                  = function
+        let f2                  = function
                   (Left a ,Left  c) -> Left (Left (a,c))
                 | (Left a ,Right d) -> Right(Left (a,d))
                 | (Right b,Left  c) -> Left (Right(b,c))
                 | (Right b,Right d) -> Right(Right(b,d))
-        let f4                  = function
+        let g2                  = function
                   Left (Left (a,c)) -> (Left  a,Left  c)
                 | Right(Left (a,d)) -> (Left  a,Right d)
                 | Left (Right(b,c)) -> (Right b,Left  c)
                 | Right(Right(b,d)) -> (Right b,Right d)
-        let f5      (f,g)       = function  
+        let f3      (f,g)       = function  
                   Left a            -> f a
                 | Right b           -> g b
-        let f6       f          =          
+        let g3       f          =          
             let left f a = f (Left a) in let right f b = f (Right b) in 
             (left f, right f)
     end  

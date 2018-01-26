@@ -6,6 +6,7 @@ let table = empty
     <<< ("b", "the second alphabet")
     <<< ("zzz", "sleeping noize")
 
+let () = print_string "table = \n" 
 let () = match retrieve "a" table with 
           Some x        -> print_endline x
         | None          -> ()
