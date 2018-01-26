@@ -228,7 +228,7 @@ module MyString =
 
 
 
-module MyList =
+module List =
     struct
         let cons x xs           = x::xs
         let nil                 = []
@@ -307,7 +307,7 @@ module MyList =
             product_with_filter (fun(x,y)->x*x+y*y=r)(1--s)(1--s) 
         (* Haskell>>> squares r = let s = sqrt r in
          *              [ (x,y) | x<-[1..s], y<-[1..s], x^2+y^2=r ] *) 
-    end open MyList
+    end open List
 
 
 
