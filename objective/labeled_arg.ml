@@ -47,10 +47,9 @@ let k ~x ~y         = x
 let k'              = k 1 2     (* not return 1 *)
 
 
-let k x y           = x
-let apply f a b     = f ~a ~b
-let k'              = apply k 
-
+let apply k x y     = k ~x ~y
+let k               = apply k 
+let k'              = k 1 2     (* return 1 *)
 
 
 
