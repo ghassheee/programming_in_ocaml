@@ -223,6 +223,8 @@ module MyString =
         let sand t s        = s ^ t ^ s
         let emphasize s     = sand s "_"
         let repeat s n      = foldn ((^)s) "" n
+        let rec _tolist s i = if i>=String.length s then [] else s.[i] :: _tolist s(i+1) 
+        let to_list s       = _tolist s 0
     end open MyString
 
 

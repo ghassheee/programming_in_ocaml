@@ -18,17 +18,22 @@ module Server =
         let getaddr ()              = addr_of_host  (gethost())
         let getport ()              = int_of_string (Sys.argv.(1))
         let rec re f x              = try f x with Unix_error(EINTR,_,_) -> re f x
-        let server f sockaddr       = 
-                bind tcp_sock sockaddr;
+
+        let server f a              = (* a is sockaddr *)
+                bind tcp_sock a;
                 listen tcp_sock 3;
                 while true do   
-                    let (sock,caller) = re accept tcp_sock in 
-                    match fork() with
-                          0   -> if fork()<>0 then exit 0;    (* fork start *)
-                                 f sock ;                     (* main service *) 
-                                 exit 0;                      (* fork end *)
-                        | pid -> close sock; ignore(re(waitpid[])pid)done;;
-        let wrap_server f           = check_args ();
+                    let (s,c) = re accept tcp_sock in           (* s: sock    *)
+                    match fork() with                           (* c: caller  *)
+                          0   ->    if fork()<>0 then exit 0;      (* fork start   *)
+                                    f s ;                          (* main service *) 
+                                    exit 0;                        (* fork end     *)
+                        | pid ->    close s; 
+                                    ignore(re(waitpid[])pid)
+                done ;;
+        
+        let wrap_server f           = 
+                check_args ();
                 try server f (sockaddr_of(getaddr())(getport()))
                 with Failure("int_of_string")->eprintf "bad port number\n"
         let go f                    = handle_unix_error wrap_server f
@@ -36,11 +41,11 @@ module Server =
         (*    fork () = alreadyExistsFork ? thePID : 0                *)
 
         let uncurry f' = fun sock -> (* f' i o  -> f sock *)    
-            let i  = in_channel_of_descr sock in 
-            let o  = out_channel_of_descr sock in 
-            let () = f' i o in  
-            let () = close_in i in 
-            close_out o
+                let i  = in_channel_of_descr sock in 
+                let o  = out_channel_of_descr sock in 
+                let () = f' i o in  
+                let () = close_in i in 
+                close_out o
     end open Server
 
 module UpperCase =
