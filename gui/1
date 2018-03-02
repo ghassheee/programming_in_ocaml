@@ -1,0 +1,25 @@
+open Tk
+open Printf
+
+
+(*
+ *   +--------------------------------------------+
+ *   |                  Window                    |
+ *   +--------------------------------------------+
+ *   |                +---------+                 |
+ *   |                | BUtton  |                 |
+ *   |                +---------+                 |
+ *   +--------------------------------------------+
+ *) 
+
+let top = openTk();;
+let frame = Frame.create top
+let label = Label.create frame ~text:"hoge"
+let button = Button.create frame ~text:"hoge"
+let f () =   () (*Button.flash button *)
+let button2 = Button.create frame ~text:"fuga" ~command:(f);;
+
+
+let () = 
+    pack [coe label; coe frame] ~side:`Top
+    mainLoop()
