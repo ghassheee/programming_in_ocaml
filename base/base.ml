@@ -1,7 +1,9 @@
+
 open Int64
 
 exception Arg 
 
+let ios = int_of_string
 let soi = string_of_int
 let sof = string_of_float
 let iof = int_of_float
@@ -234,8 +236,10 @@ module List =
     struct
         let cons x xs           = x::xs
         let nil                 = []
-        let tail (x::xs)        = xs
-        let head (x::xs)        = x
+        let tail                = function    []    -> []
+                                            | x::xs -> xs
+        let head                = function    []    -> raise Arg
+                                            | x::xs -> x
         let rec foldl f i       = function    []    -> i
                                             | x::xs -> f (foldl f i xs) x 
         let rec foldr f i       = function    []    -> i
@@ -253,6 +257,7 @@ module List =
                 (n,l) when n<0||l=[]    -> raise Arg
               | (0,x::_)                -> x
               | (n,_::xs)               -> elem (n-1) xs
+              | _                       -> raise Arg
         let (%) l n             = elem n l
         let rec zip l r         = match (l,r) with
                 ([],_) | (_,[])         -> []
@@ -454,8 +459,7 @@ module MyQueue =
         let push    a       = function
               {head=RNil;last=RNil}as q -> let c=RCons(a,ref RNil) in
                                            q.head<-c;q.last<-c 
-            | {head=b}as q              -> let c=RCons(a,ref b) in q.head<-c
-            | _                         -> failwith "input queue broken"
+            | {head=b} as q             -> let c=RCons(a,ref b) in q.head<-c
 
         let peek            = function
               {head=RNil;last=RNil}     -> failwith "empty queue"
@@ -470,5 +474,4 @@ module MyQueue =
             | _                         -> failwith "queue's head broken"        
         (* let q               = create () *)
     end open MyQueue
-
 
