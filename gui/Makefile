@@ -17,5 +17,8 @@ all:
 	${OCAML} eg_scrollbar.ml	-o eg_scrollbar
 	${OCAML} eg_scale.ml		-o eg_scale
 	${OCAML} eg_menu.ml			-o eg_menu
+	${OCAML} eg_text.ml			-o eg_text
+	${OCAML} eg_topmenu.ml		-o eg_topmenu
+	${OCAML} eg_editor.ml		-o eg_editor
 clean: 
 	rm *.cmi *.cmo 
