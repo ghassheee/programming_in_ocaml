@@ -26,8 +26,14 @@ let menu            = Menu.create mb
 let submenu         = Menu.create menu
 let text            = Text.create top;;
 
+let tt = let d = Toplevel.create top in destroy d; ref d
+
 let name            = ref "" 
-let get_name ()     = "filename"
+let box f txt ()     = 
+    let t = Toplevel.create top in 
+    let e = Entry.create t in
+    let b = Button.create t ~text:txt ~command:(fun()->name := Entry.get e; print_string !name; f !name(); destroy !tt) in
+    pack [coe e;coe b]; tt := t
 
 let read_file s     = name := s;open_in_gen  [Open_creat] 0o644 s
 let write_file s    = open_out_gen [Open_creat;Open_wronly;Open_text] 0o644 s 
@@ -39,13 +45,13 @@ let rec text_of_read i txt =
 let rec write_of_text txt o = 
     try  output_string o (Text.get txt(`Atxy(0,0),[])(`End,[]))
     with End_of_file -> ()
-let open_file ()    = text_of_read (read_file (get_name ())) text
-let saveas ()       = write_of_text text (write_file(get_name()))
+let open_file s ()  = text_of_read (read_file s) text 
+let saveas s ()     = write_of_text text (write_file s)
 let save ()         = write_of_text text (write_file !name)
 
 let config  ()      = 
-    Menu.add_command menu ~label:"Open" ~command:(open_file);
-    Menu.add_command menu ~label:"Save as"~command:(saveas);
+    Menu.add_command menu ~label:"Open" ~command:(box open_file "open");
+    Menu.add_command menu ~label:"Save as"~command:(box saveas "save");
     Menu.add_command menu ~label:"Save"   ~command:(save);
     Menu.add_cascade menu ~label:"Cascade" ~menu:submenu;
     Menu.add_command submenu ~label:"Quit!" ~command:(fun()->closeTk(); exit 0);
