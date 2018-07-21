@@ -20,5 +20,8 @@ all:
 	${OCAML} eg_text.ml			-o eg_text
 	${OCAML} eg_topmenu.ml		-o eg_topmenu
 	${OCAML} eg_editor.ml		-o eg_editor
+	${OCAML} eg_image_tag.ml	-o eg_image_tag
+	${OCAML} eg_pack_bind.ml	-o eg_pack_bind
+	${OCAML} eg_canvas.ml		-o eg_canvas
 clean: 
 	rm *.cmi *.cmo 
