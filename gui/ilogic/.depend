@@ -1,0 +1,10 @@
+board.cmo : mySupport.cmi board.cmi
+board.cmx : mySupport.cmx board.cmi
+board.cmi :
+gui.cmo : mySupport.cmi board.cmi
+gui.cmx : mySupport.cmx board.cmx
+input.cmo : board.cmi
+input.cmx : board.cmx
+mySupport.cmo : mySupport.cmi
+mySupport.cmx : mySupport.cmi
+mySupport.cmi :
